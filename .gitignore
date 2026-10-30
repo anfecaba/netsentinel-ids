@@ -32,3 +32,13 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Python / captura
+capture/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+capture/logs/
+demo/certs/
+*.pcap
+*.pcapng
