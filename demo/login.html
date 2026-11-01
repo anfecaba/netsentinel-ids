@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portal del laboratorio · NetSentinel</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #070a12;
+        --card: #0d1220;
+        --border: #1e2637;
+        --text: #e8eef7;
+        --muted: #94a3b8;
+        --primary: #34d399;
+        --danger: #fb7185;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(52, 211, 153, 0.12), transparent),
+          var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 400px;
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .tag {
+        display: inline-block;
+        margin-bottom: 14px;
+        padding: 3px 8px;
+        border: 1px solid rgba(251, 191, 36, 0.4);
+        border-radius: 6px;
+        background: rgba(251, 191, 36, 0.1);
+        color: #fbbf24;
+        font: 600 10px/1.4 ui-monospace, monospace;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
+
+      p.lead {
+        margin: 0 0 22px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font: 600 10px/1.4 ui-monospace, monospace;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      input {
+        width: 100%;
+        margin-bottom: 16px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #060910;
+        color: var(--text);
+        font: 14px/1.4 ui-monospace, monospace;
+      }
+
+      input:focus {
+        border-color: var(--primary);
+        outline: 2px solid rgba(52, 211, 153, 0.25);
+        outline-offset: 1px;
+      }
+
+      button {
+        width: 100%;
+        padding: 11px 14px;
+        border: 1px solid rgba(52, 211, 153, 0.4);
+        border-radius: 9px;
+        background: rgba(52, 211, 153, 0.14);
+        color: var(--primary);
+        font: 600 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgba(52, 211, 153, 0.24);
+      }
+
+      footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      code {
+        font-family: ui-monospace, monospace;
+        color: #cbd5e1;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <span class="tag">Solo laboratorio</span>
+      <h1>Portal del laboratorio</h1>
+      <p class="lead">
+        Formulario de demostración con credenciales <strong>ficticias</strong>. Sirve para comparar
+        lo que un sniffer pasivo observa por HTTP frente a HTTPS.
+      </p>
+
+      <form id="login-form" method="post" action="/login" autocomplete="off">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" value="alice" required />
+
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" value="SuperSecret123" required />
+
+        <button type="submit">Iniciar sesión (datos falsos)</button>
+      </form>
+
+      <footer>
+        <p style="margin: 0 0 8px">
+          <strong style="color: #cbd5e1">alice / SuperSecret123</strong> son valores sintéticos de
+          laboratorio, no una cuenta real.
+        </p>
+        <p style="margin: 0">
+          Sin HTTPS, estos campos viajan en texto plano dentro de la petición
+          <code>POST /login</code>. Con HTTPS, un observador pasivo solo ve metadatos TLS.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

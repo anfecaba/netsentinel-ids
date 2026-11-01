@@ -52,11 +52,12 @@ class HttpRequest:
     host: str
     headers: Dict[str, str]
     body: bytes
-    source_ip: str
-    source_port: int
-    destination_ip: str
-    destination_port: int
     captured_at: datetime
+    source_ip: str = ""
+    source_port: int = 0
+    destination_ip: str = ""
+    destination_port: int = 0
+    raw_bytes: int = 0
 
 
 @dataclass

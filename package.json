@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "animejs": "^3.2.2",
+    "d3-force": "^3.0.0",
     "nuxt": "3.13.2",
     "zod": "^3.23.8"
   },
@@ -19,6 +20,7 @@
     "@nuxtjs/tailwindcss": "^6.11.4",
     "@pinia/nuxt": "^0.5.1",
     "@types/animejs": "^3.1.12",
+    "@types/d3-force": "^3.0.10",
     "pinia": "^2.1.7",
     "vitest": "^2.1.1"
   }
