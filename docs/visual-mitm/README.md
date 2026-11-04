@@ -6,6 +6,7 @@ hasta 100 nodos a 30 FPS.
 
 | Documento | Contenido |
 |---|---|
+| [`datos-sensibles.md`](./datos-sensibles.md) | Resumen de una página: qué datos sensibles maneja el proyecto, dónde viven y qué se construyó |
 | [`demo-http-vs-https.md`](./demo-http-vs-https.md) | Guion reproducible de la comparación HTTP vs HTTPS, con comandos para Windows y Linux |
 | [`magerit-v3.md`](./magerit-v3.md) | Análisis de riesgos adaptado a MAGERIT v3: activos, amenazas, valoración y salvaguardas |
 | [`iso-27001-2022.md`](./iso-27001-2022.md) | Correspondencia control del Anexo A → evidencia en NetSentinel → brecha |

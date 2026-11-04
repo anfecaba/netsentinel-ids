@@ -451,6 +451,7 @@ Todo en [`docs/visual-mitm/`](./docs/visual-mitm/):
 
 | Documento | Contenido |
 | :--- | :--- |
+| [`datos-sensibles.md`](./docs/visual-mitm/datos-sensibles.md) | **Empieza aquí si vienes de fuera:** qué datos sensibles maneja el proyecto, dónde viven y qué se construyó, en una página |
 | [`informe-final.md`](./docs/visual-mitm/informe-final.md) | Informe listo para entregar: objetivos, metodología, resultados, limitaciones y referencias |
 | [`evidencias.md`](./docs/visual-mitm/evidencias.md) | Checklist E1–E9 con comandos, resultados medidos y límites declarados |
 | [`magerit-v3.md`](./docs/visual-mitm/magerit-v3.md) | Análisis de riesgos: activos, amenazas, valoración y salvaguardas |
