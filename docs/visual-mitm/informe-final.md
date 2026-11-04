@@ -169,15 +169,15 @@ evidencia real de simulada. El contrato completo está en
 | Coste por fotograma | 1,0–1,6 ms | 33,3 ms a 30 FPS ✅ |
 | Fotogramas largos (> 50 ms) | 0 | 0 ✅ |
 | Cadencia objetivo (60/75/90/120/144 Hz) | **29,9 FPS** en los cinco | 30 ✅ |
+| **FPS medidos en pantalla** (120 Hz) | **29,9 FPS** (180 fotogramas en 6,02 s) | 30 ✅ |
 
 El indicador marcaba 20–24 FPS al principio. La causa no era rendimiento, sino
 que el límite de 30 Hz se cuantizaba al refresco de la pantalla: el código
 anterior daba 20,3 FPS a 60 Hz y 24,9 a 75 Hz, justo las cifras observadas. Se
 corrigió extrayendo la decisión a `advanceFrame` (`utils/labMetrics.ts`), que
-avanza la referencia en múltiplos del objetivo, y se verificó simulando 10 s a
-60, 75, 90, 120 y 144 Hz: **29,9 FPS en los cinco casos**. La observación directa
-del indicador marcando 30 no se logró en este equipo porque el navegador dejó de
-presentar fotogramas; se declara así en `evidencias.md` (E6).
+avanza la referencia en múltiplos del objetivo. Verificado de dos formas:
+simulando 10 s a 60, 75, 90, 120 y 144 Hz (**29,9 FPS** en los cinco) y midiendo
+en pantalla 180 fotogramas en 6,02 s a 120 Hz (**29,9 FPS**).
 
 ### 7.4 Demo HTTP vs HTTPS
 
@@ -255,10 +255,8 @@ zona gris y no como habilitación.
 1. **Sin captura real en Windows.** No hay Npcap instalado en el equipo de
    trabajo; todas las cifras de tráfico provienen del modo simulación, marcado
    `synthetic: true`.
-2. **30 FPS no observados directamente en pantalla.** La cadencia está verificada
-   por simulación a 60/75/90/120 Hz y el coste por fotograma es de 1–1,6 ms; no se
-   logró ver el indicador marcando 30 porque el navegador dejó de presentar
-   fotogramas.
+2. **30 FPS verificados en una sola pantalla.** Medidos 29,9 FPS en una pantalla
+   de 120 Hz; para otros refrescos la evidencia es la simulación unitaria.
 3. **Red conmutada/WPA2.** Un sniffer pasivo no ve tráfico de terceros sin puerto
    espejo o AP propio.
 4. **Un fallo de test preexistente** en Windows por dependencia de `/proc/net`.

@@ -15,7 +15,7 @@
 | E3 | El build de producción compila | ✅ | `nuxt build` → Build complete, 1,95 MB |
 | E4 | La latencia del WebSocket es < 1500 ms | ✅ | máx. **2,8 ms** (mediana 1,6 ms) |
 | E5 | El grafo soporta 100 nodos | ✅ | **99/100 nodos**, 188 aristas |
-| E6 | El grafo se dibuja a 30 FPS | ✅ | 30 FPS verificados por simulación a 60/75/90/120 Hz |
+| E6 | El grafo se dibuja a 30 FPS | ✅ | **29,9 FPS medidos en pantalla** (120 Hz, 99 nodos, 1,0 ms/fotograma) |
 | E7 | La demo distingue HTTP de HTTPS | ✅ | 200/200/400 frente a 200/200/000 |
 | E8 | No se filtran credenciales a la consola | ✅ | **0** coincidencias en los logs |
 | E9 | Los documentos académicos están completos | ✅ | 6 documentos en `docs/visual-mitm/` |
@@ -190,12 +190,31 @@ tres refrescos (50 ms) en vez de dos (33,3 ms).
 Los seis casos verifican además que no se pinta antes de tiempo y que una pausa
 de 10 s produce un solo fotograma, sin ráfaga de recuperación.
 
-**Lo que sigue sin verificarse en pantalla:** la observación directa del
-indicador a 30 FPS. En el navegador integrado la pestaña llegó a reportar
-`requestAnimationFrame` a 0 Hz (el compositor dejó de presentar fotogramas),
-y con CDP las ventanas se marcaron `document.hidden = true`. Por eso la prueba
-de cadencia es determinista (unitaria) y no una captura: es la única forma
-honesta de afirmar 30 FPS en este equipo.
+#### E6.4 Verificación final en pantalla
+
+Con la corrección aplicada, en el navegador de la sesión (pantalla de **120 Hz**,
+pestaña visible, 99 nodos y 177 aristas):
+
+| Métrica | Valor |
+|---|---:|
+| Fotogramas en 6,02 s | 180 |
+| **FPS medidos** | **29,9** |
+| FPS reportado por la UI | 30 |
+| Coste medio por fotograma | 1,0 ms |
+| Refresco de la pantalla | 120 Hz |
+
+```
+render: 30 FPS · nodos 99/100 · latencia WS 47 ms
+```
+
+Evidencia: [`evidencias/03-render-30fps.jpg`](./evidencias/03-render-30fps.jpg)
+muestra el indicador `RENDER 30 FPS` con `99/100` nodos y 184 aristas.
+
+**Lo que no se afirma:** que el rendimiento sea idéntico en cualquier equipo. La
+medición directa se hizo en una pantalla de 120 Hz; para 60, 75, 90 y 144 Hz la
+evidencia es la simulación de E6.3, no una observación en ese hardware. Y en
+ventanas marcadas `document.hidden` por el navegador el bucle no pinta, por
+diseño.
 
 Evidencia visual del comportamiento anterior:
 [`evidencias/02-render-fps.png`](./evidencias/02-render-fps.png) muestra el grafo
@@ -264,10 +283,8 @@ Ninguno de estos puntos se presenta como resuelto:
 1. **Captura real en Windows: no ejecutada.** Requiere Npcap instalado y una
    consola de administrador. En esta máquina no está Npcap, así que todas las
    cifras de tráfico son del modo `--demo` (`synthetic: true`).
-2. **30 FPS no observados directamente en pantalla.** La cadencia está
-   verificada por simulación a 60/75/90/120 Hz (E6.3) y el coste por fotograma es
-   de 1–1,6 ms; lo que no se logró fue ver el indicador marcar 30, porque el
-   navegador de esta sesión dejó de presentar fotogramas.
+2. **30 FPS verificados en una sola pantalla.** Medidos 29,9 FPS en una pantalla
+   de 120 Hz; para otros refrescos la evidencia es la simulación de E6.3.
 3. **Red conmutada o WPA2.** Un sniffer pasivo no ve tráfico de terceros sin
    puerto espejo o AP propio. Es una limitación del escenario, no un defecto del
    software, y aparece en el pie de `/laboratorio`.
@@ -305,4 +322,5 @@ cd demo
 | Archivo | Qué muestra |
 |---|---|
 | `evidencias/01-laboratorio-100-nodos.png` | Vista general: pestañas, banner legal, KPIs (472 flujos, 49 credenciales, 79 DNS, 73 ms, 99/100 nodos) |
-| `evidencias/02-render-fps.png` | Grafo completo de 99 nodos con 188 aristas, credenciales con valores completos, panel DNS y tabla de flujos con HTTP/HTTPS, indicador `24 FPS · 34 ms` |
+| `evidencias/02-render-fps.png` | Grafo completo de 99 nodos con 188 aristas, credenciales con valores completos, panel DNS y tabla de flujos con HTTP/HTTPS, indicador `24 FPS · 34 ms` (comportamiento **antes** de la corrección de cadencia) |
+| `evidencias/03-render-30fps.jpg` | Indicador `RENDER 30 FPS` con `99/100` nodos y 184 aristas, después de la corrección |
