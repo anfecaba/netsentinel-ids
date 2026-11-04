@@ -199,6 +199,30 @@ netsentinel-ids/
 Cuatro terminales. El modo `--demo` no abre la NIC: genera eventos sintéticos
 marcados `synthetic: true` y la interfaz los rotula como **SIMULACIÓN**.
 
+**Linux / macOS (bash / zsh):**
+
+```bash
+# 1 · Dashboard
+bun install
+bun run dev                                    # http://localhost:3090
+
+# 2 · Backend de captura en modo simulación
+cd capture
+uv sync --extra dev --extra demo
+uv run python -m lab_capture.main --demo --nodes 100 --rate 30
+
+# 3 · Demo HTTP (en otra terminal)
+cd demo
+../capture/.venv/bin/python http_login_server.py      # :8080
+
+# 4 · Demo HTTPS (en otra terminal)
+cd demo
+../capture/.venv/bin/python generate_cert.py          # una sola vez
+../capture/.venv/bin/python https_login_server.py     # :8443
+```
+
+**Windows (PowerShell):**
+
 ```powershell
 # 1 · Dashboard
 bun install
@@ -225,7 +249,7 @@ valores completos y el indicador `RENDER 30 FPS`.
 
 ### Captura real
 
-Windows (PowerShell como administrador):
+Windows (PowerShell **como administrador**):
 
 ```powershell
 cd capture
@@ -233,15 +257,44 @@ uv run python -m lab_capture.main --list-ifaces
 uv run python -m lab_capture.main --iface "Wi-Fi" --i-have-authorization
 ```
 
-Linux:
+Linux (requiere `libpcap-dev` y `CAP_NET_RAW`):
 
 ```bash
 cd capture
 sudo uv run python -m lab_capture.main --iface wlo1 --i-have-authorization
 ```
 
+macOS (requiere `libpcap`, incluido por defecto):
+
+```bash
+cd capture
+sudo uv run python -m lab_capture.main --iface en0 --i-have-authorization
+```
+
 Sin `--i-have-authorization` imprime el aviso legal y sale con código 2. No hay
 forma de saltarse ese control desde la interfaz.
+
+Notas por plataforma:
+
+- **Windows:** abre PowerShell como administrador. Npcap con modo compatible
+  WinPcap es obligatorio. El `--iface` acepta el nombre o la descripción que
+  devuelve `--list-ifaces` (por ejemplo `"Wi-Fi"` o `"Ethernet"`).
+- **Linux:** usa `sudo` o otorga `CAP_NET_RAW` al intérprete del venv con
+  `sudo setcap cap_net_raw+eip $(readlink -f capture/.venv/bin/python)`.
+- **macOS:** Scapy usa `libpcap`; la captura requiere `sudo`.
+- **Loopback:** en Windows puede requerir el adaptador "Npcap Loopback
+  Adapter"; si no captura en loopback, usa la interfaz LAN con tráfico propio.
+
+### Exponer el WebSocket en LAN (opcional)
+
+```bash
+uv run python -m lab_capture.main --iface wlo1 --i-have-authorization \
+  --host 0.0.0.0 --token "cadena-larga-aleatoria" \
+  --origin "http://192.168.1.50:3090"
+```
+
+Fuera de `localhost` el token es obligatorio y se valida el encabezado `Origin`
+cuando se declara `--origin`. El navegador se conecta a `ws://<ip>:8765/?token=...`.
 
 ### Exponer el WebSocket en LAN (opcional)
 
