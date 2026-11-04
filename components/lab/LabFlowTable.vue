@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { serviceLabelFor } from '~/utils/labServiceLabels'
+
 const store = useLabStore()
 
 const rows = computed(() =>
@@ -12,6 +14,10 @@ const protocolClass: Record<string, string> = {
   HTTPS: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
   TLS: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
   DNS: 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+}
+
+function serviceFor(flow: { host?: string; destinationIp: string }): { label: string; tone: string } | null {
+  return serviceLabelFor(flow.host ?? null)
 }
 
 function shortTime(iso: string): string {
@@ -42,6 +48,7 @@ function shortTime(iso: string): string {
             <th scope="col" class="px-4 py-2 font-medium">Hora</th>
             <th scope="col" class="px-2 py-2 font-medium">Origen → destino</th>
             <th scope="col" class="px-2 py-2 font-medium">Protocolo</th>
+            <th scope="col" class="px-2 py-2 font-medium">Servicio</th>
             <th scope="col" class="px-4 py-2 text-right font-medium">Cifrado</th>
           </tr>
         </thead>
@@ -62,6 +69,19 @@ function shortTime(iso: string): string {
               >
                 {{ flow.protocol }}
               </span>
+            </td>
+            <td class="px-2 py-2">
+              <span
+                v-if="serviceFor(flow)"
+                class="rounded border px-1.5 py-0.5 font-mono text-[10px]"
+                :class="serviceFor(flow)!.tone"
+              >
+                {{ serviceFor(flow)!.label }}
+              </span>
+              <span v-else-if="flow.host" class="truncate font-mono text-[10px] text-muted-foreground">
+                {{ flow.host }}
+              </span>
+              <span v-else class="font-mono text-[10px] text-muted-foreground">—</span>
             </td>
             <td class="px-4 py-2 text-right">
               <span v-if="flow.encrypted" class="text-emerald-400" title="Cifrado">TLS</span>

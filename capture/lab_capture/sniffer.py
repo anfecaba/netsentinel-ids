@@ -95,6 +95,75 @@ def resolve_interface(name: str) -> str:
     return name
 
 
+
+def _extract_sni(payload: bytes) -> Optional[str]:
+    """Extrae el Server Name Indication (SNI) de un ClientHello TLS.
+
+    El SNI viaja en claro por diseno del protocolo (RFC 6066): es metadato
+    observable por cualquier observador pasivo. No descifra el payload.
+    Devuelve None si el paquete no es un ClientHello valido o no lleva SNI.
+    """
+
+    if not payload or payload[0] != 0x16 or len(payload) < 5:
+        return None
+
+    record_len = int.from_bytes(payload[3:5], "big")
+    if record_len <= 0 or record_len + 5 > len(payload):
+        record_len = len(payload) - 5
+    body = payload[5 : 5 + record_len]
+
+    if len(body) < 4 or body[0] != 0x01:  # handshake type ClientHello
+        return None
+
+    hs_len = int.from_bytes(body[1:4], "big")
+    ch = body[4 : 4 + hs_len]
+    if len(ch) < 34:
+        return None
+
+    off = 2 + 32  # version + random
+    if off >= len(ch):
+        return None
+    sid_len = ch[off]
+    off += 1 + sid_len
+    if off + 2 > len(ch):
+        return None
+    cs_len = int.from_bytes(ch[off : off + 2], "big")
+    off += 2 + cs_len
+    if off + 1 > len(ch):
+        return None
+    cm_len = ch[off]
+    off += 1 + cm_len
+    if off + 2 > len(ch):
+        return None
+    ext_len = int.from_bytes(ch[off : off + 2], "big")
+    off += 2
+    ext_end = min(off + ext_len, len(ch))
+
+    while off + 4 <= ext_end:
+        ext_type = int.from_bytes(ch[off : off + 2], "big")
+        ext_size = int.from_bytes(ch[off + 2 : off + 4], "big")
+        off += 4
+        ext_data = ch[off : off + ext_size]
+        off += ext_size
+        if ext_type == 0x0000 and len(ext_data) >= 2:  # server_name
+            list_len = int.from_bytes(ext_data[0:2], "big")
+            pos = 2
+            list_end = min(2 + list_len, len(ext_data))
+            while pos + 3 <= list_end:
+                name_type = ext_data[pos]
+                name_len = int.from_bytes(ext_data[pos + 1 : pos + 3], "big")
+                pos += 3
+                if pos + name_len > list_end:
+                    break
+                name_bytes = ext_data[pos : pos + name_len]
+                pos += name_len
+                if name_type == 0:
+                    try:
+                        return name_bytes.decode("ascii")
+                    except UnicodeDecodeError:
+                        return name_bytes.decode("latin-1")
+    return None
+
 class CaptureEngine:
     """Diseca paquetes y emite eventos del contrato Visual MITM."""
 
@@ -187,6 +256,11 @@ class CaptureEngine:
             return
 
         ip_layer = packet[IP]
+        sni = _extract_sni(payload)
+        note = "Solo metadatos TLS; el payload no se descifra"
+        if sni:
+            note = "TLS con SNI en claro: %s (payload no descifrado)" % sni
+
         self.flows_emitted += 1
         self._emit(
             make_flow_event(
@@ -199,7 +273,8 @@ class CaptureEngine:
                 bytes_transferred=len(payload),
                 risk_level="safe",
                 captured_at=captured_at,
-                note="Solo metadatos TLS; el payload no se descifra",
+                host=sni,
+                note=note,
             )
         )
 
