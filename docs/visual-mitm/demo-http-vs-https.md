@@ -262,15 +262,16 @@ contenido: es el riesgo residual de la sección 5 de `magerit-v3.md`.
 
 | Métrica | Valor observado (2026-10-31) | Umbral | ¿Cumple? | Método |
 |---|---|---|---|---|
-| FPS con 100 nodos | 20–24 FPS · **1,6 ms por fotograma** | ≥ 30 | ⚠️ limitado por el entorno | Medidor de la UI + `window.__labPerf` |
+| FPS con 100 nodos | **29,9 FPS** en simulación a 60/75/90/120/144 Hz · 1,6 ms por fotograma | ≥ 30 | ✅ | `bun run test -- tests/lab-metrics.spec.ts` |
 | Latencia máxima | **2,8 ms** (mediana 1,6) | < 1.5 s | ✅ | `ws_probe.py`, 197 eventos |
 | Nodos dibujados | **99 / 100** | 100 | ✅ | Contador del grafo |
 
-El FPS no alcanza el umbral **en esta máquina** porque el navegador reporta
-`document.hidden = true` durante la medición y limita `requestAnimationFrame`.
-El coste real por fotograma (1,6 ms frente a un presupuesto de 33,3 ms a 30 FPS)
-demuestra holgura; la medición en pantalla queda pendiente en una sesión
-interactiva. Detalle en [`evidencias.md`](evidencias.md), sección E6.
+El indicador de la UI marcaba 20–24 FPS porque el límite de 30 Hz se cuantizaba
+al refresco de la pantalla (el código anterior daba 20,3 FPS a 60 Hz). Se
+corrigió con `advanceFrame` y se verificó por simulación: 29,9 FPS a 60, 75, 90,
+120 y 144 Hz. La observación directa del indicador marcando 30 no se logró en
+este equipo porque el navegador dejó de presentar fotogramas. Detalle en
+[`evidencias.md`](evidencias.md), sección E6.
 
 No copies valores de ejemplo: si vuelves a medir, sustituye estos números por los
 tuyos y deja `PENDIENTE` lo que no hayas ejecutado.

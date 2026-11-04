@@ -13,7 +13,7 @@ import {
 } from 'd3-force'
 import type { LabGraph, LabNodeRole, LabProtocol, LabRisk } from '~/types/lab'
 import { colorForRole, DANGER_COLOR, edgeColorFor, radiusForDegree } from '~/utils/labGraphStyle'
-import { FpsMeter } from '~/utils/labMetrics'
+import { advanceFrame, FpsMeter } from '~/utils/labMetrics'
 
 interface SimNode extends SimulationNodeDatum {
   id: string
@@ -248,8 +248,9 @@ function startLoop(): void {
   const loop = (now: number) => {
     animationId = requestAnimationFrame(loop)
     if (document.hidden) return
-    if (now - lastFrame < FRAME_MS) return
-    lastFrame = now
+    const gate = advanceFrame(now, lastFrame, FRAME_MS)
+    if (!gate.due) return
+    lastFrame = gate.lastFrame
 
     const startedAt = performance.now()
     if (simulation && simulation.alpha() > 0.004) {

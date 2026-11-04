@@ -11,11 +11,11 @@
 | ID | Afirmación | Estado | Resultado medido |
 |---|---|:--:|---|
 | E1 | Los tests del backend de captura pasan | ✅ | **50 passed** en 2,39 s |
-| E2 | Los tests del frontend pasan | ⚠️ | 36 passed + 1 fallo preexistente en Windows |
+| E2 | Los tests del frontend pasan | ⚠️ | 42 passed + 1 fallo preexistente en Windows |
 | E3 | El build de producción compila | ✅ | `nuxt build` → Build complete, 1,95 MB |
 | E4 | La latencia del WebSocket es < 1500 ms | ✅ | máx. **2,8 ms** (mediana 1,6 ms) |
 | E5 | El grafo soporta 100 nodos | ✅ | **99/100 nodos**, 188 aristas |
-| E6 | El grafo se dibuja a 30 FPS | ⚠️ | 24 FPS observados; **1,6 ms por fotograma** |
+| E6 | El grafo se dibuja a 30 FPS | ✅ | 30 FPS verificados por simulación a 60/75/90/120 Hz |
 | E7 | La demo distingue HTTP de HTTPS | ✅ | 200/200/400 frente a 200/200/000 |
 | E8 | No se filtran credenciales a la consola | ✅ | **0** coincidencias en los logs |
 | E9 | Los documentos académicos están completos | ✅ | 6 documentos en `docs/visual-mitm/` |
@@ -48,17 +48,17 @@ Cobertura por módulo: `config`, `http_parser`, `credentials`, `dns_parser`,
 bun run test
 ```
 
-Resultado: **36 passed, 1 failed**. El fallo es
+Resultado: **42 passed, 1 failed**. El fallo es
 `tests/defensive-engine.spec.ts:82`, que lee `/proc/net` y por tanto solo puede
 pasar en Linux. **No se ha ocultado ni marcado como `skip`**: es un fallo
 preexistente del proyecto base, ajeno a este módulo, y se documenta como tal.
 
-Los tests nuevos del laboratorio (24) sí pasan:
+Los tests nuevos del laboratorio (30) sí pasan:
 
 | Archivo | Casos |
 |---|---:|
 | `tests/lab-store.spec.ts` | 11 |
-| `tests/lab-metrics.spec.ts` | 6 |
+| `tests/lab-metrics.spec.ts` | 12 |
 | `tests/lab-graph-style.spec.ts` | 7 |
 
 ### E3 · Build de producción
@@ -123,31 +123,83 @@ inflar el número.
 
 ### E6 · Rendimiento de dibujo (30 FPS)
 
+La medición se hizo en dos capas, porque el navegador de esta sesión no siempre
+entrega fotogramas: primero el **coste real** de dibujar, y luego la **cadencia**
+con una prueba determinista.
+
+#### E6.1 Coste por fotograma
+
 Instrumentación `window.__labPerf` y `PerformanceObserver` de
 `long-animation-frame`, sobre 99 nodos y 188 aristas:
 
-| Métrica | Headless (9222) | Instancia con ventana (9223) |
+| Métrica | Headless (CDP 9222) | Instancia con ventana (CDP 9223) |
 |---|---:|---:|
 | FPS reportado | 20 | 24 |
 | Coste medio por fotograma | **1,0 ms** | **1,6 ms** |
 | Fotogramas contados | 707 | 126 |
 | Fotogramas largos (> 50 ms) | **0** | **0** |
 
-**Conclusión honesta:** el coste real de dibujar 99 nodos y 188 aristas es de
-**1–1,6 ms por fotograma**. A 30 FPS el presupuesto por fotograma es 33,3 ms, así
-que el render consume entre el 3 % y el 5 % de ese presupuesto: hay holgura para
-30 FPS con un factor de ~20.
+El coste de dibujar 99 nodos y 188 aristas es de **1–1,6 ms**. A 30 FPS el
+presupuesto por fotograma es 33,3 ms, así que el render consume entre el 3 % y el
+5 %: hay holgura de ~20×.
 
-**Lo que no se afirma:** que el indicador haya marcado 30 FPS en pantalla. En
-esta máquina el navegador reportó `document.hidden === true` en ambos intentos
-—incluso con `Page.setWebLifecycleState('active')` y con una instancia con
-ventana—, lo que limita `requestAnimationFrame` a ~20–24 Hz. Es una restricción
-del entorno de medición (sesión sin foco de escritorio), no del código. La
-verificación a 30 FPS en pantalla queda **pendiente de ejecutarse en un equipo
-con sesión interactiva**, y por eso no se declara como cumplida.
+#### E6.2 Defecto encontrado y corregido
 
-Evidencia visual: [`evidencias/02-render-fps.png`](./evidencias/02-render-fps.png)
-muestra el grafo completo con el indicador `24 FPS · 34 ms`.
+El indicador marcaba 20–24 FPS aunque el coste por fotograma era de 1 ms. La
+causa no era rendimiento sino **cuantización del intervalo**: el bucle usaba
+`if (now - lastFrame < FRAME_MS) return; lastFrame = now`, de modo que el
+intervalo se redondeaba al múltiplo del refresco de la pantalla. A 90 Hz el
+objetivo de 33,3 ms cae en 44,4 ms → **22,5 FPS**; a 120 Hz cae en 33,3 ms →
+30 FPS. El mismo código rendía distinto en cada monitor.
+
+Se extrajo la decisión a una función pura, `advanceFrame` en
+`utils/labMetrics.ts`, que avanza la referencia en múltiplos del objetivo:
+
+```ts
+export function advanceFrame(now, lastFrame, frameMs): { due: boolean, lastFrame: number } {
+  const elapsed = now - lastFrame
+  if (elapsed < frameMs) return { due: false, lastFrame }
+  return { due: true, lastFrame: now - (elapsed % frameMs) }
+}
+```
+
+#### E6.3 Verificación de la cadencia
+
+```powershell
+bun run test -- tests/lab-metrics.spec.ts
+```
+
+Seis casos nuevos simulan 10 s de refresco y cuentan los fotogramas realmente
+pintados. La comparación con el código anterior explica todas las cifras
+observadas:
+
+| Refresco simulado | Código anterior | Código corregido | Umbral |
+|---|---:|---:|:--:|
+| 60 Hz | **20,3 FPS** | **29,9 FPS** | ✅ |
+| 75 Hz | 24,9 FPS | 29,9 FPS | ✅ |
+| 90 Hz | 24,5 FPS | 29,9 FPS | ✅ |
+| 120 Hz | 26,6 FPS | 29,9 FPS | ✅ |
+| 144 Hz | 28,7 FPS | 29,9 FPS | ✅ |
+
+Los 20,3 FPS a 60 Hz del código anterior coinciden con los **20 FPS** medidos en
+el navegador headless, y los 24,9 a 75 Hz con los **24 FPS** de la instancia con
+ventana. No era falta de rendimiento: el límite de 30 Hz se redondeaba al
+múltiplo del refresco, y la aritmética de coma flotante hacía que 60 Hz cayera en
+tres refrescos (50 ms) en vez de dos (33,3 ms).
+
+Los seis casos verifican además que no se pinta antes de tiempo y que una pausa
+de 10 s produce un solo fotograma, sin ráfaga de recuperación.
+
+**Lo que sigue sin verificarse en pantalla:** la observación directa del
+indicador a 30 FPS. En el navegador integrado la pestaña llegó a reportar
+`requestAnimationFrame` a 0 Hz (el compositor dejó de presentar fotogramas),
+y con CDP las ventanas se marcaron `document.hidden = true`. Por eso la prueba
+de cadencia es determinista (unitaria) y no una captura: es la única forma
+honesta de afirmar 30 FPS en este equipo.
+
+Evidencia visual del comportamiento anterior:
+[`evidencias/02-render-fps.png`](./evidencias/02-render-fps.png) muestra el grafo
+completo con `24 FPS · 34 ms`, capturado antes de la corrección.
 
 ### E7 · Demo HTTP vs HTTPS
 
@@ -212,8 +264,10 @@ Ninguno de estos puntos se presenta como resuelto:
 1. **Captura real en Windows: no ejecutada.** Requiere Npcap instalado y una
    consola de administrador. En esta máquina no está Npcap, así que todas las
    cifras de tráfico son del modo `--demo` (`synthetic: true`).
-2. **30 FPS en pantalla: no verificado.** Ver E6. El coste por fotograma sí está
-   medido y es de 1–1,6 ms.
+2. **30 FPS no observados directamente en pantalla.** La cadencia está
+   verificada por simulación a 60/75/90/120 Hz (E6.3) y el coste por fotograma es
+   de 1–1,6 ms; lo que no se logró fue ver el indicador marcar 30, porque el
+   navegador de esta sesión dejó de presentar fotogramas.
 3. **Red conmutada o WPA2.** Un sniffer pasivo no ve tráfico de terceros sin
    puerto espejo o AP propio. Es una limitación del escenario, no un defecto del
    software, y aparece en el pie de `/laboratorio`.
